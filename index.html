@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waqas Biryani House · Hall Road, Lahore</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a0a;
+            color: #f5f1e8;
+            overflow-x: hidden;
+        }
+
+        /* Progress bar */
+        #progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 2px;
+            background: linear-gradient(90deg, #d4a055, #f4c47a);
+            z-index: 1000;
+            transition: width 0.1s ease-out;
+        }
+
+        /* Scroll track */
+        #scroll-track {
+            height: 800vh;
+            position: relative;
+        }
+
+        /* Sticky stage */
+        #stage {
+            position: sticky;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Canvas */
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Dark veil over stage */
+        #stage::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Bottom gradient for watermark handling */
+        #stage::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(to top, rgba(10,10,10,0.7) 0%, rgba(10,10,10,0) 100%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Wordmark */
+        #wordmark {
+            position: absolute;
+            bottom: 32px;
+            left: 40px;
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(245,241,232,0.6);
+            font-weight: 500;
+            z-index: 3;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        /* Chapter overlays */
+        .chapter {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            pointer-events: none;
+            max-width: 90%;
+        }
+
+        .chapter.active {
+            opacity: 1;
+        }
+
+        .chapter h1 {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: clamp(32px, 6vw, 72px);
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            text-shadow: 0 4px 16px rgba(0,0,0,0.6);
+            color: #f5f1e8;
+        }
+
+        .chapter p {
+            font-size: clamp(14px, 2vw, 20px);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #d4a055;
+            font-weight: 500;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+        }
+
+        /* Rating chip inside chapters */
+        .chapter .rating-chip {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 18px;
+            border: 1px solid rgba(212,160,85,0.7);
+            border-radius: 999px;
+            background: rgba(10,10,10,0.55);
+            color: #f5f1e8;
+            font-size: clamp(13px, 1.6vw, 16px);
+            letter-spacing: 0.04em;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        }
+
+        .chapter .rating-chip .star {
+            color: #d4a055;
+        }
+
+        /* Call / WhatsApp chips inside the final chapter */
+        .chapter .cta-chips {
+            margin-top: 26px;
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .chapter .cta-chips a {
+            pointer-events: auto;
+            display: inline-block;
+            padding: 13px 26px;
+            border-radius: 999px;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-decoration: none;
+            transition: transform 0.2s ease, background 0.3s ease;
+        }
+
+        .chapter .cta-chips a.call {
+            background: #d4a055;
+            color: #0a0a0a;
+        }
+
+        .chapter .cta-chips a.wa {
+            background: rgba(10,10,10,0.55);
+            border: 1.5px solid #d4a055;
+            color: #f5f1e8;
+        }
+
+        .chapter .cta-chips a:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Booking form */
+        .booking {
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 72px;
+            background: linear-gradient(180deg, #111111 0%, #0d0d0d 100%);
+        }
+
+        .booking h3 {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: clamp(26px, 3.5vw, 40px);
+            font-weight: 400;
+            color: #f5f1e8;
+            margin-bottom: 10px;
+        }
+
+        .booking .booking-sub {
+            color: #8a8a8a;
+            font-size: 16px;
+            margin-bottom: 32px;
+        }
+
+        .booking form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .booking .field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .booking .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .booking label {
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #8a8a8a;
+            font-weight: 500;
+        }
+
+        .booking input,
+        .booking textarea {
+            background: #161616;
+            border: 1px solid #2c2c2c;
+            border-radius: 8px;
+            padding: 14px 16px;
+            color: #f5f1e8;
+            font-size: 16px;
+            font-family: inherit;
+            color-scheme: dark;
+        }
+
+        .booking input:focus,
+        .booking textarea:focus {
+            outline: none;
+            border-color: #d4a055;
+        }
+
+        .booking textarea {
+            resize: vertical;
+            min-height: 76px;
+        }
+
+        .booking .submit-btn {
+            grid-column: 1 / -1;
+            padding: 17px 32px;
+            background: #d4a055;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 17px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .booking .submit-btn:hover {
+            background: #f4c47a;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .booking {
+                padding: 28px 22px;
+            }
+
+            .booking form {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* End section */
+        #end-section {
+            background: #0a0a0a;
+            padding: 120px 40px 80px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        #end-section h2 {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: clamp(36px, 5vw, 64px);
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            margin-bottom: 16px;
+            color: #f5f1e8;
+        }
+
+        #end-section .tagline {
+            font-size: clamp(16px, 2vw, 22px);
+            color: #d4a055;
+            margin-bottom: 32px;
+            font-weight: 400;
+        }
+
+        .reviews {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 48px;
+            font-size: 18px;
+        }
+
+        .reviews .stars {
+            color: #d4a055;
+            font-size: 24px;
+        }
+
+        .reviews .count {
+            color: #8a8a8a;
+        }
+
+        .signatures {
+            margin-bottom: 64px;
+        }
+
+        .signatures h3 {
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #8a8a8a;
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+
+        .signatures ul {
+            list-style: none;
+        }
+
+        .signatures li {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: clamp(20px, 3vw, 32px);
+            margin-bottom: 12px;
+            color: #f5f1e8;
+        }
+
+        .map-container {
+            margin-bottom: 48px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #222;
+        }
+
+        .map-container iframe {
+            width: 100%;
+            height: 400px;
+            border: none;
+            display: block;
+        }
+
+        .contact-info {
+            margin-bottom: 48px;
+        }
+
+        .contact-info .address {
+            font-size: 18px;
+            color: #c0c0c0;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 32px;
+            background: #d4a055;
+            color: #0a0a0a;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: background 0.3s ease, transform 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #f4c47a;
+            transform: translateY(-2px);
+        }
+
+        .btn.secondary {
+            background: transparent;
+            border: 2px solid #d4a055;
+            color: #d4a055;
+        }
+
+        .btn.secondary:hover {
+            background: rgba(212, 160, 85, 0.1);
+        }
+
+        .hours {
+            font-size: 18px;
+            color: #8a8a8a;
+            margin-bottom: 64px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid #222;
+            font-size: 13px;
+            color: #666;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 768px) {
+            #wordmark {
+                left: 20px;
+                bottom: 20px;
+                font-size: 11px;
+            }
+
+            #end-section {
+                padding: 80px 24px 60px;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Progress bar -->
+    <div id="progress-bar"></div>
+
+    <!-- Scroll track -->
+    <div id="scroll-track">
+        <div id="stage">
+            <canvas id="canvas"></canvas>
+
+            <!-- Wordmark -->
+            <div id="wordmark">Waqas Biryani House</div>
+
+            <!-- Chapter 1: 0-20% — business name + fame + area + verified rating -->
+            <div class="chapter" data-start="0" data-end="0.2">
+                <h1>Waqas<br>Biryani House</h1>
+                <p>Famous for chicken biryani · Hall Road, Lahore</p>
+                <span class="rating-chip"><span class="star">★</span> 4.3 · ~13,400 Google reviews</span>
+            </div>
+
+            <!-- Chapter 2: 25-50% — the craft + what it's famous for -->
+            <div class="chapter" data-start="0.25" data-end="0.5">
+                <h1>The deg opens.<br>The steam rises.</h1>
+                <p>Chicken biryani · Pulao · Shami kebab — the Hall Road signatures</p>
+            </div>
+
+            <!-- Chapter 3: 55-80% — invitation + hours + one-tap contact chips -->
+            <div class="chapter" data-start="0.55" data-end="0.8">
+                <h1>Your table<br>is waiting.</h1>
+                <p>Open daily · 11:00 AM – 11:00 PM · Hall Road, Lahore</p>
+                <div class="cta-chips">
+                    <a class="call" href="tel:+923225359191">Call Now</a>
+                    <a class="wa" href="https://wa.me/923225359191">WhatsApp</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- End section -->
+    <div id="end-section">
+        <!-- Booking / order form — submits via WhatsApp -->
+        <div class="booking">
+            <h3>Place an Order / Book</h3>
+            <p class="booking-sub">Fill this in and confirm on WhatsApp — no account, no advance. We reply to confirm your order or table.</p>
+            <form id="booking-form">
+                <div class="field">
+                    <label for="bf-name">Your name</label>
+                    <input id="bf-name" name="name" type="text" required autocomplete="name" placeholder="e.g. Ahmed Khan">
+                </div>
+                <div class="field">
+                    <label for="bf-phone">Phone</label>
+                    <input id="bf-phone" name="phone" type="tel" required autocomplete="tel" placeholder="03xx xxxxxxx">
+                </div>
+                <div class="field">
+                    <label for="bf-date">Date</label>
+                    <input id="bf-date" name="date" type="date" required>
+                </div>
+                <div class="field">
+                    <label for="bf-time">Time</label>
+                    <input id="bf-time" name="time" type="time" required>
+                </div>
+                <div class="field">
+                    <label for="bf-guests">Number of guests</label>
+                    <input id="bf-guests" name="guests" type="number" min="1" max="200" required placeholder="e.g. 4">
+                </div>
+                <div class="field">
+                    <label for="bf-note">Note (optional)</label>
+                    <textarea id="bf-note" name="note" placeholder="Anything we should know?"></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Send via WhatsApp</button>
+            </form>
+        </div>
+
+        <h2>Waqas Biryani House</h2>
+        <p class="tagline">Chicken biryani, pulao & shami kebab — done properly.</p>
+
+        <div class="reviews">
+            <span class="stars">★★★★☆</span>
+            <span>4.3</span>
+            <span class="count">· ~13,400 Google reviews</span>
+        </div>
+
+        <div class="signatures">
+            <h3>House Signatures</h3>
+            <ul>
+                <li>Chicken Biryani</li>
+                <li>Pulao</li>
+                <li>Shami Kebab</li>
+            </ul>
+        </div>
+
+        <div class="map-container">
+            <iframe
+                src="https://maps.google.com/maps?q=Waqas%20Biryani%20House%2C%20Hall%20Road%2C%20Garhi%20Shahu%2C%20Lahore&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                allowfullscreen=""
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
+        </div>
+
+        <div class="contact-info">
+            <p class="address">G-6 Feroz Deen Center, Hall Road, Garhi Shahu, Lahore</p>
+
+            <div class="buttons">
+                <a href="tel:+923225359191" class="btn">Call +92 322 5359191</a>
+                <a href="https://wa.me/923225359191" class="btn secondary">WhatsApp</a>
+            </div>
+
+            <p class="hours">Open daily · 11:00 AM – 11:00 PM</p>
+        </div>
+
+        <footer>
+            Demo website crafted by Corvix Studio
+        </footer>
+    </div>
+
+    <script>
+        // Canvas and context
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const progressBar = document.getElementById('progress-bar');
+        const chapters = document.querySelectorAll('.chapter');
+
+        // Frame configuration
+        const FRAME_COUNT = 151;
+        const frames = [];
+        let framesLoaded = 0;
+        let highestLoadedFrame = 0;
+
+        // Animation state
+        let currentFrame = 0;
+        let targetFrame = 0;
+        const LERP_FACTOR = 0.12;
+
+        // Device pixel ratio (capped at 2)
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        // Setup canvas dimensions
+        function resizeCanvas() {
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            ctx.scale(dpr, dpr);
+        }
+        resizeCanvas();
+
+        // Cover-fit drawing function
+        function drawFrame(img) {
+            if (!img || !img.complete) return;
+
+            const canvasWidth = window.innerWidth;
+            const canvasHeight = window.innerHeight;
+            const imgRatio = img.width / img.height;
+            const canvasRatio = canvasWidth / canvasHeight;
+
+            let drawWidth, drawHeight, offsetX, offsetY;
+
+            if (imgRatio > canvasRatio) {
+                // Image is wider - fit to height
+                drawHeight = canvasHeight;
+                drawWidth = drawHeight * imgRatio;
+                offsetX = (canvasWidth - drawWidth) / 2;
+                offsetY = 0;
+            } else {
+                // Image is taller - fit to width
+                drawWidth = canvasWidth;
+                drawHeight = drawWidth / imgRatio;
+                offsetX = 0;
+                offsetY = (canvasHeight - drawHeight) / 2;
+            }
+
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+        }
+
+        // Progressive frame loading
+        function loadFrames() {
+            for (let i = 1; i <= FRAME_COUNT; i++) {
+                const img = new Image();
+                const frameIndex = i - 1;
+
+                img.onload = function() {
+                    framesLoaded++;
+                    if (frameIndex > highestLoadedFrame) {
+                        highestLoadedFrame = frameIndex;
+                    }
+
+                    // Draw first frame immediately
+                    if (frameIndex === 0) {
+                        drawFrame(img);
+                    }
+
+                    // Update progress bar (combines load + scroll)
+                    updateProgressBar();
+                };
+
+                img.src = `frames/f${String(i).padStart(4, '0')}.jpg`;
+                frames[frameIndex] = img;
+            }
+        }
+
+        // Scroll handler
+        function updateScroll() {
+            const scrollTrack = document.getElementById('scroll-track');
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const maxScroll = scrollTrack.offsetHeight - window.innerHeight;
+            const scrollProgress = Math.min(Math.max(scrollTop / maxScroll, 0), 1);
+
+            // Map to frame index
+            targetFrame = Math.floor(scrollProgress * (FRAME_COUNT - 1));
+            targetFrame = Math.min(targetFrame, highestLoadedFrame);
+
+            // Update chapters
+            updateChapters(scrollProgress);
+
+            // Update progress bar
+            updateProgressBar();
+        }
+
+        // Update chapter visibility
+        function updateChapters(progress) {
+            chapters.forEach(chapter => {
+                const start = parseFloat(chapter.dataset.start);
+                const end = parseFloat(chapter.dataset.end);
+
+                if (progress >= start && progress <= end) {
+                    chapter.classList.add('active');
+                } else {
+                    chapter.classList.remove('active');
+                }
+            });
+        }
+
+        // Update progress bar (combines load and scroll)
+        function updateProgressBar() {
+            const scrollProgress = window.pageYOffset / (document.getElementById('scroll-track').offsetHeight - window.innerHeight);
+            const loadProgress = framesLoaded / FRAME_COUNT;
+
+            // Show whichever is more complete
+            const displayProgress = Math.max(scrollProgress, loadProgress * 0.3); // Load shows as first 30% max
+            progressBar.style.width = (displayProgress * 100) + '%';
+        }
+
+        // Animation loop with lerp smoothing
+        function animate() {
+            // Smooth interpolation
+            currentFrame += (targetFrame - currentFrame) * LERP_FACTOR;
+
+            // Draw current frame
+            const frameIndex = Math.round(currentFrame);
+            const img = frames[frameIndex];
+
+            if (img && img.complete) {
+                drawFrame(img);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        window.addEventListener('scroll', updateScroll);
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            const currentImg = frames[Math.round(currentFrame)];
+            if (currentImg && currentImg.complete) {
+                drawFrame(currentImg);
+            }
+        });
+
+        // Initialize
+        loadFrames();
+        updateScroll();
+        animate();
+
+        // Booking form → WhatsApp (no backend; WhatsApp is the submission channel)
+        document.getElementById('booking-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const f = e.target;
+            const lines = [
+                'Assalam-o-Alaikum! I would like to place an order / book at Waqas Biryani House.',
+                'Name: ' + f.name.value.trim(),
+                'Phone: ' + f.phone.value.trim(),
+                'Date: ' + f.date.value,
+                'Time: ' + f.time.value,
+                'Guests: ' + f.guests.value
+            ];
+            const note = f.note.value.trim();
+            if (note) lines.push('Note: ' + note);
+            const url = 'https://wa.me/923225359191?text=' + encodeURIComponent(lines.join('\n'));
+            window.open(url, '_blank');
+        });
+    </script>
+</body>
+</html>
